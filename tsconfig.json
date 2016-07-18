@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "module": "amd",
+        "newLine": "LF",
+        "noImplicitAny": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "outFile": "./ghpage/minesweeper.js",
+        "target": "es5",
+        "sourceMap": true
+    },
+    "files": [
+        "scripts/minesweeper.ts"
+    ]
+}
