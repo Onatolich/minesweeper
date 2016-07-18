@@ -1,0 +1,50 @@
+* {
+    position: relative;
+    box-sizing: border-box;
+}
+
+body {
+    position: fixed;
+    top: 0;
+    left: 0;
+    margin: auto;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: #fff;
+}
+
+#minesweeper {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    padding: 4px;
+    min-width: 200px;
+    min-height: 200px;
+    border: 1px solid #ccc;
+}
+
+#noticeArea {
+    display: inline-block;
+    max-width: 100%;
+}
+
+#battlefield {
+    margin: auto;
+    border: 0;
+}
+
+#battlefield td {
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    color: #000
+}
+
+#battlefield td.marked {
+    background: #f00;
+}
+
+#battlefield td.mine {
+    background: #333;
+}
