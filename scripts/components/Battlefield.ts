@@ -14,7 +14,7 @@ interface BattlefieldData {
 
 export class Battlefield extends BaseView {
     data: BattlefieldData;
-    cells: Cell[] = [];
+    cells: Cell[][] = [];
 
     constructor(element: Element, data: BattlefieldData) {
         super(element, data);
@@ -35,37 +35,40 @@ export class Battlefield extends BaseView {
     }
 
     private generateCells() {
-        let rowElement: Element;
-        for (let i = 0; i < this.data.rows * this.data.cells; i++) {
-            if (!(i % this.data.cells)) {
-                rowElement = document.createElement('tr');
-                this.el.appendChild(rowElement);
+        for (let i = 0; i < this.data.rows; i++) {
+            this.cells[i] = <Cell[]>[];
+            let rowElement = document.createElement('tr');
+            this.el.appendChild(rowElement);
+
+            for (let j = 0; j < this.data.cells; j++) {
+                let cell = this.generateCell([i, j]);
+                rowElement.appendChild(cell.el);
+                this.cells[i][j] = cell;
             }
-            rowElement.appendChild(this.generateCell(i));
         }
     }
 
-    private generateCell(index: number): Element {
-        let cellElement = document.createElement('td');
-
-        this.cells[index] = new Cell(cellElement, {
+    private generateCell(index: [number, number]): Cell {
+        let cell = new Cell(document.createElement('td'), {
             type: CellTypes.Regular,
+            index: index,
             closed: true,
             marked: false,
             dangerRate: 0
         });
-
-        return cellElement;
+        
+        this.bindCellEvents(cell);
+        return cell;
     }
 
     private generateMines() {
         let minesLeft = this.data.mines;
-        let cellsCount = this.data.cells * this.data.rows;
 
         while (minesLeft > 0) {
-            let index = Math.round(Math.random() * (cellsCount - 1) + 1);
+            let rowIndex = Math.round(Math.random() * (this.data.rows - 1));
+            let cellIndex = Math.round(Math.random() * (this.data.cells - 1));
 
-            let cell: Cell = this.cells[index];
+            let cell: Cell = this.cells[rowIndex][cellIndex];
 
             if (cell.isMine()) {
                 continue;
@@ -76,35 +79,59 @@ export class Battlefield extends BaseView {
             cell.update();
         }
     }
+    
+    private bindCellEvents(cell: Cell) {
+        this.listenTo(cell, 'open', this.onCellOpen);
+    }
 
     private updateDangerRates() {
-        for (let i = 0; i < this.cells.length; i++) {
-            this.updateDangerRate(i);
+        for (let i = 0; i < this.data.rows; i++) {
+            for (let j = 0; j < this.data.cells; j++) {
+                this.updateDangerRate(this.cells[i][j]);
+            }
         }
     }
 
-    private updateDangerRate(index: number) {
-        let cell: Cell = this.cells[index];
+    private updateDangerRate(cell: Cell) {
         cell.data.dangerRate = 0;
 
         if (cell.isMine()) {
             return;
         }
 
-        let relatedIndexes: number[] = [];
+        let neighbourCells: Cell[] = this.getAllNeighbourCells(cell.data.index);
 
-        let topIndex = index - this.data.cells;
-        let bottomIndex = index + this.data.cells;
-        relatedIndexes = relatedIndexes.concat([topIndex - 1, topIndex, topIndex + 1]); // Top row
-        relatedIndexes = relatedIndexes.concat([index - 1, index + 1]); // Current row
-        relatedIndexes = relatedIndexes.concat([bottomIndex - 1, bottomIndex, bottomIndex + 1]); // Bottom row
-
-        for (let i of relatedIndexes) {
-            if (this.cells[i] instanceof Cell && this.cells[i].isMine()) {
+        for (let neighbourCell of neighbourCells) {
+            if (neighbourCell.isMine()) {
                 ++cell.data.dangerRate;
             }
         }
         cell.update();
+    }
+    
+    private getAllNeighbourCells(index: [number, number]): Cell[] {
+        let cells: Cell[] = [];
+
+        let topIndex = [index[0] - 1, index[1]];
+        let bottomIndex = [index[1] + 1, index[1]];
+
+        let topRow = [[topIndex[0], topIndex[1] - 1], topIndex, [topIndex[0], topIndex[1] + 1]];
+        let currentRow = [[index[0], index[1] - 1], [index[0], index[1] + 1]];
+        let bottomRow = [[bottomIndex[0], bottomIndex[1] - 1], bottomIndex, [bottomIndex[0], bottomIndex[1] + 1]];
+
+        let indexes = topRow.concat(currentRow).concat(bottomRow);
+
+        for (let neighbourIndex of indexes) {
+            if (neighbourIndex[0] < 0 || neighbourIndex[0] > this.data.rows - 1) {
+                continue;
+            }
+            if (neighbourIndex[1] < 0 || neighbourIndex[1] > this.data.cells - 1) {
+                continue;
+            }
+            cells.push(this.cells[neighbourIndex[0]][neighbourIndex[1]]);
+        }
+
+        return cells;
     }
 
     private clear() {
@@ -112,11 +139,33 @@ export class Battlefield extends BaseView {
             if (!this.cells.hasOwnProperty(i)) {
                 continue;
             }
+            let row = this.cells[i];
 
-            let cell = this.cells[i];
-            cell.destroy();
-            this.el.removeChild(cell.el);
+            for (let j in row) {
+                if (!row.hasOwnProperty(j)) {
+                    continue;
+                }
+                let cell = row[j];
+
+                cell.destroy();
+                this.el.removeChild(cell.el);
+                delete this.cells[i][j];
+            }
             delete this.cells[i];
+        }
+    }
+    
+    private onCellOpen(cell: Cell) {
+        if (cell.isMine()) {
+            this.trigger(BattlefieldEvents.MineClicked);
+            return;
+        }
+
+        if (!cell.data.dangerRate) {
+            let neighbours = this.getAllNeighbourCells(cell.data.index);
+            for (let neighbourCell of neighbours) {
+                neighbourCell.open();
+            }
         }
     }
 }

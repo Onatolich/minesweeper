@@ -6,16 +6,16 @@ export class BaseClass implements BaseEventsInterface {
 
     constructor() {}
 
-    trigger(event: string, args: Array<any>) {
+    trigger(event: string, args?: Array<any>) {
         for (let eventObj of this._events) {
             if (eventObj.name !== event) {
                 continue;
             }
-            eventObj.handler.apply(eventObj.context || this, args);
+            eventObj.handler.apply(eventObj.context || this, args || []);
         }
     }
 
-    listenTo(obj: BaseEventsInterface, event: string, handler: () => void) {
+    listenTo(obj: BaseEventsInterface, event: string, handler: (...args) => void) {
         obj.on(event, handler, this);
     }
 
@@ -23,7 +23,7 @@ export class BaseClass implements BaseEventsInterface {
         obj.off(event, this);
     }
 
-    on(event: string, handler: () => void, context: BaseEventsInterface) {
+    on(event: string, handler: (...args) => void, context: BaseEventsInterface) {
         let eventObj = <EventObjectInterface>{
             name: event,
             handler: handler,

@@ -7,6 +7,7 @@ export enum CellTypes {
 
 interface CellData {
     type: CellTypes,
+    index: [number, number],
     closed: boolean,
     marked: boolean,
     dangerRate: number // neighbour mines
@@ -31,6 +32,15 @@ export class Cell extends BaseView {
         this.actualizeClass();
     }
 
+    open() {
+        if (!this.data.closed) {
+            return;
+        }
+        this.data.closed = false;
+        this.trigger('open', [this]);
+        this.update();
+    }
+
     isMine(): boolean {
         return this.data.type === CellTypes.Mine;
     }
@@ -47,12 +57,6 @@ export class Cell extends BaseView {
     private initEvents() {
         this.el.addEventListener('click', this.onClick.bind(this));
         this.el.addEventListener('contextmenu', this.onRightClick.bind(this));
-    }
-
-    private open() {
-        this.data.closed = false;
-        this.trigger('open', [this.data]);
-        this.update();
     }
 
     private toggleMark() {

@@ -39,9 +39,9 @@ export class Game extends BaseView {
         this.notices.displayRegular('Game started. Good luck!', -1);
 
         this.battlefield.data = {
-            cells: 10,
-            rows: 10,
-            mines: 10
+            cells: 20,
+            rows: 20,
+            mines: 50
         };
 
         this.battlefield.generate();

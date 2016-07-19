@@ -32,6 +32,6 @@ export class Notices extends BaseView {
 
     private clear() {
         this.el.className = '';
-        this.el.innerHTML = '';
+        this.el.innerHTML = '&nbsp;';
     }
 }

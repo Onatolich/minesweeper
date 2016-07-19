@@ -21,7 +21,7 @@ define("base/BaseClass", ["require", "exports"], function (require, exports) {
                 if (eventObj.name !== event) {
                     continue;
                 }
-                eventObj.handler.apply(eventObj.context || this, args);
+                eventObj.handler.apply(eventObj.context || this, args || []);
             }
         };
         BaseClass.prototype.listenTo = function (obj, event, handler) {
@@ -89,6 +89,14 @@ define("components/Cell", ["require", "exports", "base/BaseView"], function (req
             }
             this.actualizeClass();
         };
+        Cell.prototype.open = function () {
+            if (!this.data.closed) {
+                return;
+            }
+            this.data.closed = false;
+            this.trigger('open', [this]);
+            this.update();
+        };
         Cell.prototype.isMine = function () {
             return this.data.type === CellTypes.Mine;
         };
@@ -103,11 +111,6 @@ define("components/Cell", ["require", "exports", "base/BaseView"], function (req
             this.el.addEventListener('click', this.onClick.bind(this));
             this.el.addEventListener('contextmenu', this.onRightClick.bind(this));
         };
-        Cell.prototype.open = function () {
-            this.data.closed = false;
-            this.trigger('open', [this.data]);
-            this.update();
-        };
         Cell.prototype.toggleMark = function () {
             this.data.marked = !this.data.marked;
             this.trigger('mark', [this.data]);
@@ -115,6 +118,9 @@ define("components/Cell", ["require", "exports", "base/BaseView"], function (req
         };
         Cell.prototype.actualizeClass = function () {
             var classes = [];
+            if (this.data.marked) {
+                classes.push('marked');
+            }
             if (!this.data.closed) {
                 classes.push('open');
                 if (this.data.type === CellTypes.Mine) {
@@ -123,9 +129,6 @@ define("components/Cell", ["require", "exports", "base/BaseView"], function (req
                 else if (this.data.dangerRate > 0) {
                     classes.push('danger-' + this.data.dangerRate);
                 }
-            }
-            else if (this.data.marked) {
-                classes.push('marked');
             }
             this.el.className = classes.join(' ');
         };
@@ -168,31 +171,34 @@ define("components/Battlefield", ["require", "exports", "base/BaseView", "compon
             this.updateDangerRates();
         };
         Battlefield.prototype.generateCells = function () {
-            var rowElement;
-            for (var i = 0; i < this.data.rows * this.data.cells; i++) {
-                if (!(i % this.data.cells)) {
-                    rowElement = document.createElement('tr');
-                    this.el.appendChild(rowElement);
+            for (var i = 0; i < this.data.rows; i++) {
+                this.cells[i] = [];
+                var rowElement = document.createElement('tr');
+                this.el.appendChild(rowElement);
+                for (var j = 0; j < this.data.cells; j++) {
+                    var cell = this.generateCell([i, j]);
+                    rowElement.appendChild(cell.el);
+                    this.cells[i][j] = cell;
                 }
-                rowElement.appendChild(this.generateCell(i));
             }
         };
         Battlefield.prototype.generateCell = function (index) {
-            var cellElement = document.createElement('td');
-            this.cells[index] = new Cell_1.Cell(cellElement, {
+            var cell = new Cell_1.Cell(document.createElement('td'), {
                 type: Cell_1.CellTypes.Regular,
+                index: index,
                 closed: true,
                 marked: false,
                 dangerRate: 0
             });
-            return cellElement;
+            this.bindCellEvents(cell);
+            return cell;
         };
         Battlefield.prototype.generateMines = function () {
             var minesLeft = this.data.mines;
-            var cellsCount = this.data.cells * this.data.rows;
             while (minesLeft > 0) {
-                var index = Math.round(Math.random() * (cellsCount - 1) + 1);
-                var cell = this.cells[index];
+                var rowIndex = Math.round(Math.random() * (this.data.rows - 1));
+                var cellIndex = Math.round(Math.random() * (this.data.cells - 1));
+                var cell = this.cells[rowIndex][cellIndex];
                 if (cell.isMine()) {
                     continue;
                 }
@@ -201,40 +207,79 @@ define("components/Battlefield", ["require", "exports", "base/BaseView", "compon
                 cell.update();
             }
         };
+        Battlefield.prototype.bindCellEvents = function (cell) {
+            this.listenTo(cell, 'open', this.onCellOpen);
+        };
         Battlefield.prototype.updateDangerRates = function () {
-            for (var i = 0; i < this.cells.length; i++) {
-                this.updateDangerRate(i);
+            for (var i = 0; i < this.data.rows; i++) {
+                for (var j = 0; j < this.data.cells; j++) {
+                    this.updateDangerRate(this.cells[i][j]);
+                }
             }
         };
-        Battlefield.prototype.updateDangerRate = function (index) {
-            var cell = this.cells[index];
+        Battlefield.prototype.updateDangerRate = function (cell) {
             cell.data.dangerRate = 0;
             if (cell.isMine()) {
                 return;
             }
-            var relatedIndexes = [];
-            var topIndex = index - this.data.cells;
-            var bottomIndex = index + this.data.cells;
-            relatedIndexes = relatedIndexes.concat([topIndex - 1, topIndex, topIndex + 1]);
-            relatedIndexes = relatedIndexes.concat([index - 1, index + 1]);
-            relatedIndexes = relatedIndexes.concat([bottomIndex - 1, bottomIndex, bottomIndex + 1]);
-            for (var _i = 0, relatedIndexes_1 = relatedIndexes; _i < relatedIndexes_1.length; _i++) {
-                var i = relatedIndexes_1[_i];
-                if (this.cells[i] instanceof Cell_1.Cell && this.cells[i].isMine()) {
+            var neighbourCells = this.getAllNeighbourCells(cell.data.index);
+            for (var _i = 0, neighbourCells_1 = neighbourCells; _i < neighbourCells_1.length; _i++) {
+                var neighbourCell = neighbourCells_1[_i];
+                if (neighbourCell.isMine()) {
                     ++cell.data.dangerRate;
                 }
             }
             cell.update();
+        };
+        Battlefield.prototype.getAllNeighbourCells = function (index) {
+            var cells = [];
+            var topIndex = [index[0] - 1, index[1]];
+            var bottomIndex = [index[1] + 1, index[1]];
+            var topRow = [[topIndex[0], topIndex[1] - 1], topIndex, [topIndex[0], topIndex[1] + 1]];
+            var currentRow = [[index[0], index[1] - 1], [index[0], index[1] + 1]];
+            var bottomRow = [[bottomIndex[0], bottomIndex[1] - 1], bottomIndex, [bottomIndex[0], bottomIndex[1] + 1]];
+            var indexes = topRow.concat(currentRow).concat(bottomRow);
+            for (var _i = 0, indexes_1 = indexes; _i < indexes_1.length; _i++) {
+                var neighbourIndex = indexes_1[_i];
+                if (neighbourIndex[0] < 0 || neighbourIndex[0] > this.data.rows - 1) {
+                    continue;
+                }
+                if (neighbourIndex[1] < 0 || neighbourIndex[1] > this.data.cells - 1) {
+                    continue;
+                }
+                cells.push(this.cells[neighbourIndex[0]][neighbourIndex[1]]);
+            }
+            return cells;
         };
         Battlefield.prototype.clear = function () {
             for (var i in this.cells) {
                 if (!this.cells.hasOwnProperty(i)) {
                     continue;
                 }
-                var cell = this.cells[i];
-                cell.destroy();
-                this.el.removeChild(cell.el);
+                var row = this.cells[i];
+                for (var j in row) {
+                    if (!row.hasOwnProperty(j)) {
+                        continue;
+                    }
+                    var cell = row[j];
+                    cell.destroy();
+                    this.el.removeChild(cell.el);
+                    delete this.cells[i][j];
+                }
                 delete this.cells[i];
+            }
+        };
+        Battlefield.prototype.onCellOpen = function (cell) {
+            if (cell.isMine()) {
+                this.trigger(BattlefieldEvents.MineClicked);
+                return;
+            }
+            if (!cell.data.dangerRate) {
+                var neighbours = this.getAllNeighbourCells(cell.data.index);
+                for (var _i = 0, neighbours_1 = neighbours; _i < neighbours_1.length; _i++) {
+                    var neighbourCell = neighbours_1[_i];
+                    neighbourCell.open();
+                }
             }
         };
         return Battlefield;
@@ -271,7 +316,7 @@ define("components/Notices", ["require", "exports", "base/BaseView"], function (
         };
         Notices.prototype.clear = function () {
             this.el.className = '';
-            this.el.innerHTML = '';
+            this.el.innerHTML = '&nbsp;';
         };
         return Notices;
     }(BaseView_3.BaseView));
@@ -304,9 +349,9 @@ define("components/Game", ["require", "exports", "base/BaseView", "components/Ba
         Game.prototype.startGame = function () {
             this.notices.displayRegular('Game started. Good luck!', -1);
             this.battlefield.data = {
-                cells: 10,
-                rows: 10,
-                mines: 10
+                cells: 20,
+                rows: 20,
+                mines: 50
             };
             this.battlefield.generate();
             this.updatePosition();

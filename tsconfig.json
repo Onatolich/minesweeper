@@ -2,7 +2,7 @@
     "compilerOptions": {
         "module": "amd",
         "newLine": "LF",
-        "noImplicitAny": true,
+        "noImplicitAny": false,
         "removeComments": true,
         "preserveConstEnums": true,
         "outFile": "./ghpage/minesweeper.js",
