@@ -1,0 +1,177 @@
+* {
+    position: relative;
+    box-sizing: border-box;
+    outline: none;
+}
+
+body {
+    position: fixed;
+    top: 0;
+    left: 0;
+    margin: auto;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: #fff;
+    font-family: Helvetica, 'sans-serif';
+}
+
+button {
+    padding: 5px 0;
+    width: 100px;
+    border: 0;
+    border-radius: 2px;
+    background: #fff;
+    box-shadow: inset #333 -2px -2px 5px;
+}
+
+button:active {
+    box-shadow: inset #333 2px 2px 5px;
+}
+
+#difficult {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    padding-top: 40px;
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
+
+#difficult button {
+    display: block;
+    margin: 10px auto;
+}
+
+#cover {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    display: none;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+}
+
+#restart {
+    z-index: 11;
+    display: none;
+    margin: 4px auto 0;
+}
+
+.game-over #cover,
+.game-over #restart {
+    display: block;
+}
+
+#minesweeper.hard {
+    width: 874px !important;
+}
+
+#minesweeper {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    padding: 4px;
+    min-width: 200px;
+    min-height: 200px;
+    border: 1px solid #ccc;
+}
+
+#noticeArea {
+    display: inline-block;
+    margin: 1px 0;
+    padding: 2px 5px;
+    width: 100%;
+    height: 23px;
+    background: #333;
+    text-align: center;
+    font-size: 12px;
+    line-height: 18px;
+}
+
+#noticeArea.success {
+    color: #7cff7c;
+}
+
+#noticeArea.danger {
+    color: #f86e6e;
+}
+
+#battlefield {
+    margin: 0 -1px 0 -2px;
+    border: 0;
+}
+
+#battlefield td {
+    width: 20px !important;
+    height: 20px;
+    background: #fff;
+    box-shadow: inset #aaa -2px -2px 5px;
+    color: #ddd;
+    text-align: center;
+    font-weight: bold;
+}
+
+#battlefield td.open {
+    background-color: #555;
+    box-shadow: inset #333 2px 2px 5px;
+}
+
+#battlefield td.marked:after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: -2px 0 0 -2px;
+    width: 4px;
+    height: 4px;
+    border-radius: 2px;
+    background: #f00;
+    box-shadow: #f00 0 0 2px;
+    content: '';
+}
+
+.game-over #battlefield td.marked:after {
+    background: transparent;
+    box-shadow: none;
+}
+
+#battlefield td.mine {
+    color: transparent;
+}
+
+#battlefield td.mine.clicked {
+    background: #a00;
+    box-shadow: none;
+}
+
+#battlefield td.mine:after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: -5px 0 0 -5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background: #000 !important;
+    content: '';
+}
+
+#battlefield td.mine:before {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: -5px 0 0 -5px;
+    width: 10px;
+    height: 10px;
+    background: #000;
+    content: '';
+    transform: rotate(45deg);
+}
+
+.hidden {
+    display: none !important;
+}

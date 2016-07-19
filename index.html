@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Minesweeper</title>
+
+    <link rel="stylesheet" href="./style.css">
+
+    <script src="./require.min.js"></script>
+    <script src="./minesweeper.js"></script>
+
+    <script>
+        window.onload = function() {
+            require(['minesweeper']);
+        };
+    </script>
+</head>
+<body>
+    <div id="minesweeper">
+        <div id="difficult">
+            <button class="easy-button" value="easy">Easy</button>
+            <button class="medium-button" value="medium">Medium</button>
+            <button class="hard-button" value="hard">Hard</button>
+        </div>
+        <table id="battlefield"></table>
+        <div id="noticeArea"></div>
+
+        <div id="cover"></div>
+        <button id="restart">Restart</button>
+    </div>
+</body>
+</html>
