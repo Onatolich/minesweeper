@@ -2,11 +2,31 @@ import {BaseView} from "../base/BaseView";
 import {Battlefield, BattlefieldEvents} from "./Battlefield";
 import {Notices} from "./Notices";
 
+class GameDifficults {
+    static easy = {
+        cells: 10,
+        rows: 10,
+        mines: 10
+    };
+
+    static medium = {
+        cells: 20,
+        rows: 20,
+        mines: 40
+    };
+
+    static hard = {
+        cells: 40,
+        rows: 20,
+        mines: 100
+    };
+}
+
 export class Game extends BaseView {
     private battlefield: Battlefield;
     private notices: Notices;
     private restartButton: Element;
-    private cover: Element;
+    private difficultPopup: Element;
 
     constructor(element: Element) {
         super(element);
@@ -24,25 +44,22 @@ export class Game extends BaseView {
         this.notices.displayRegular('Hello!');
 
         this.restartButton = document.getElementById('restart');
-        this.cover = document.getElementById('cover');
+        this.difficultPopup = document.getElementById('difficult');
 
         this.updatePosition();
         this.initEvents();
-        this.startGame();
     }
 
     handleError(e: Error) {
         this.notices.displayDanger(e.message);
     }
 
-    private startGame() {
+    private startGame(difficult: string = 'easy') {
+        this.el.className = difficult;
+        this.difficultPopup.className = 'hidden';
         this.notices.displayRegular('Game started. Good luck!', -1);
 
-        this.battlefield.data = {
-            cells: 20,
-            rows: 20,
-            mines: 50
-        };
+        this.battlefield.data = GameDifficults[difficult];
 
         this.battlefield.generate();
         this.updatePosition();
@@ -50,8 +67,8 @@ export class Game extends BaseView {
 
     private updatePosition() {
         let el = <HTMLScriptElement>this.el;
-        el.style.marginLeft = -this.el.clientHeight / 2 + 'px';
-        el.style.marginTop = -this.el.clientWidth / 2 + 'px';
+        el.style.marginLeft = -el.offsetWidth / 2 + 'px';
+        el.style.marginTop = -el.offsetHeight / 2 + 'px';
     }
 
     private initEvents() {
@@ -59,6 +76,12 @@ export class Game extends BaseView {
         this.listenTo(this.battlefield, BattlefieldEvents.NoSecureCellsLeft, this.win);
 
         this.restartButton.addEventListener('click', Game.onRestartButtonClick);
+
+        let difficultButtons = this.difficultPopup.getElementsByTagName('button');
+        for (let i = 0; i < difficultButtons.length; i++) {
+            let button = difficultButtons.item(i);
+            button.addEventListener('click', this.startGame.bind(this, button.value));
+        }
     }
 
     private loose() {
@@ -72,9 +95,8 @@ export class Game extends BaseView {
     }
 
     private endGame() {
+        this.battlefield.showAllMines();
         this.el.className = 'game-over';
-        this.restartButton.className = '';
-        this.cover.className = '';
     }
 
     private static onRestartButtonClick(e: Event) {

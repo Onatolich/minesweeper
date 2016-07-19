@@ -8,6 +8,7 @@ export enum CellTypes {
 interface CellData {
     type: CellTypes,
     index: [number, number],
+    clicked: boolean,
     closed: boolean,
     marked: boolean,
     dangerRate: number // neighbour mines
@@ -37,6 +38,7 @@ export class Cell extends BaseView {
             return;
         }
         this.data.closed = false;
+        this.data.clicked = true;
         this.update();
         if (!silent) {
             this.trigger('open', [this]);
@@ -70,8 +72,12 @@ export class Cell extends BaseView {
     private actualizeClass() {
         let classes: string[] = [];
 
-        if(this.data.marked) {
+        if (this.data.marked) {
             classes.push('marked');
+        }
+
+        if (this.data.clicked) {
+            classes.push('clicked');
         }
 
         if (!this.data.closed) {
@@ -88,7 +94,9 @@ export class Cell extends BaseView {
 
     private onClick(e: Event) {
         e.preventDefault();
-        this.open();
+        if (!this.data.marked) {
+            this.open();
+        }
     }
 
     private onRightClick(e: Event) {

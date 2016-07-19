@@ -23,15 +23,22 @@ export class Battlefield extends BaseView {
     }
 
     generate() {
-        if (this.data.mines > (this.data.rows * this.data.cells) / 2) {
-            throw new Error('Mines count must be less then half of total cells count.');
-        }
-
         this.clear();
 
         this.generateCells();
         this.generateMines();
         this.updateDangerRates();
+    }
+
+    showAllMines() {
+        for (let row of this.cells) {
+            for (let cCell of row) {
+                if (cCell.isMine()) {
+                    cCell.data.closed = false;
+                    cCell.update();
+                }
+            }
+        }
     }
 
     private generateCells() {
@@ -52,6 +59,7 @@ export class Battlefield extends BaseView {
         let cell = new Cell(document.createElement('td'), {
             type: CellTypes.Regular,
             index: index,
+            clicked: false,
             closed: true,
             marked: false,
             dangerRate: 0
@@ -109,17 +117,18 @@ export class Battlefield extends BaseView {
         cell.update();
     }
     
-    private getAllNeighbourCells(index: [number, number]): Cell[] {
+    private getAllNeighbourCells(index: [number, number], onlyClosed?: boolean): Cell[] {
         let cells: Cell[] = [];
+        let indexes: number[][] = [];
 
-        let topIndex = [index[0] - 1, index[1]];
-        let bottomIndex = [index[1] + 1, index[1]];
-
-        let topRow = [[topIndex[0], topIndex[1] - 1], topIndex, [topIndex[0], topIndex[1] + 1]];
-        let currentRow = [[index[0], index[1] - 1], [index[0], index[1] + 1]];
-        let bottomRow = [[bottomIndex[0], bottomIndex[1] - 1], bottomIndex, [bottomIndex[0], bottomIndex[1] + 1]];
-
-        let indexes = topRow.concat(currentRow).concat(bottomRow);
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+                if (i === 0 && j === 0) {
+                    continue;
+                }
+                indexes.push([index[0] + i, index[1] + j]);
+            }
+        }
 
         for (let neighbourIndex of indexes) {
             if (neighbourIndex[0] < 0 || neighbourIndex[0] > this.data.rows - 1) {
@@ -128,10 +137,35 @@ export class Battlefield extends BaseView {
             if (neighbourIndex[1] < 0 || neighbourIndex[1] > this.data.cells - 1) {
                 continue;
             }
-            cells.push(this.cells[neighbourIndex[0]][neighbourIndex[1]]);
+            let cell = this.cells[neighbourIndex[0]][neighbourIndex[1]];
+            if (!onlyClosed || cell.data.closed) {
+                cells.push(cell);
+            }
         }
 
         return cells;
+    }
+
+    private openNeighbourCells(cell: Cell) {
+        let neighbours = this.getAllNeighbourCells(cell.data.index, true);
+
+        for (let nCell of neighbours) {
+            nCell.open(true);
+            if (nCell.data.dangerRate === 0) {
+                this.openNeighbourCells(nCell);
+            }
+        }
+    }
+
+    private analyzeCells() {
+        for (let row of this.cells) {
+            for (let cell of row) {
+                if (!cell.isMine() && cell.data.closed) {
+                    return;
+                }
+            }
+        }
+        this.trigger(BattlefieldEvents.NoSecureCellsLeft);
     }
 
     private clear() {
@@ -154,20 +188,6 @@ export class Battlefield extends BaseView {
             delete this.cells[i];
         }
     }
-
-    private openNeighbourCells(cell: Cell) {
-        let neighbours = this.getAllNeighbourCells(cell.data.index);
-
-        for (let neighbourCell of neighbours) {
-            if (!neighbourCell.data.closed) {
-                continue;
-            }
-            if (!neighbourCell.data.dangerRate) {
-                this.openNeighbourCells(neighbourCell);
-            }
-            neighbourCell.open();
-        }
-    }
     
     private onCellOpen(cell: Cell) {
         if (cell.isMine()) {
@@ -178,5 +198,7 @@ export class Battlefield extends BaseView {
         if (!cell.data.dangerRate) {
             this.openNeighbourCells(cell);
         }
+
+        this.analyzeCells();
     }
 }

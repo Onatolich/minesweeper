@@ -5,7 +5,7 @@
         "noImplicitAny": false,
         "removeComments": true,
         "preserveConstEnums": true,
-        "outFile": "./ghpage/minesweeper.js",
+        "outFile": "./dist/minesweeper.js",
         "target": "es5",
         "sourceMap": true
     },
