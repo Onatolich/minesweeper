@@ -154,6 +154,20 @@ export class Battlefield extends BaseView {
             delete this.cells[i];
         }
     }
+
+    private openNeighbourCells(cell: Cell) {
+        let neighbours = this.getAllNeighbourCells(cell.data.index);
+
+        for (let neighbourCell of neighbours) {
+            if (!neighbourCell.data.closed) {
+                continue;
+            }
+            if (!neighbourCell.data.dangerRate) {
+                this.openNeighbourCells(neighbourCell);
+            }
+            neighbourCell.open();
+        }
+    }
     
     private onCellOpen(cell: Cell) {
         if (cell.isMine()) {
@@ -162,10 +176,7 @@ export class Battlefield extends BaseView {
         }
 
         if (!cell.data.dangerRate) {
-            let neighbours = this.getAllNeighbourCells(cell.data.index);
-            for (let neighbourCell of neighbours) {
-                neighbourCell.open();
-            }
+            this.openNeighbourCells(cell);
         }
     }
 }

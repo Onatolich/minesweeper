@@ -32,13 +32,15 @@ export class Cell extends BaseView {
         this.actualizeClass();
     }
 
-    open() {
+    open(silent?: boolean) {
         if (!this.data.closed) {
             return;
         }
         this.data.closed = false;
-        this.trigger('open', [this]);
         this.update();
+        if (!silent) {
+            this.trigger('open', [this]);
+        }
     }
 
     isMine(): boolean {
